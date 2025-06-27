@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bitcoin DCA Accumulator</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+#chartContainer { width: 800px; height: 400px; }
+input, button { margin: 5px; }
+#status, #alerts, #log { margin-top: 10px; }
+#log { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+</style>
+</head>
+<body>
+<h1>Bitcoin DCA Accumulator</h1>
+<p>This tool simulates Dollar Cost Averaging (DCA) for Bitcoin. Set the fixed amount to invest (max $100) and the interval in hours. The simulation will "buy" Bitcoin at each interval using the current price. Alerts will be shown if the price drops significantly.</p>
+<p><strong>Note:</strong> This is a simulation, not real trading. It runs only when the page is open.</p>
+
+<div>
+<label>Fixed Investment Amount ($): </label><input type="number" id="amount" value="10" min="1" max="100">
+</div>
+<div>
+<label>Interval (hours): </label><input type="number" id="interval" value="24" min="1">
+</div>
+<div>
+<label>Alert if price drops by (% in 24h): </label><input type="number" id="alertThreshold" value="5" min="1">
+</div>
+<div>
+<button id="start">Start Simulation</button>
+<button id="stop" disabled>Stop Simulation</button>
+</div>
+
+<div id="status">
+<p>Current Bitcoin Price: <span id="price">-</span></p>
+<p>Total Bitcoin Accumulated: <span id="totalBtc">0</span></p>
+<p>Total Amount Invested: <span id="totalInvested">0</span></p>
+<p>Average Buy Price: <span id="avgPrice">0</span></p>
+</div>
+
+<div id="chartContainer">
+<canvas id="priceChart"></canvas>
+</div>
+
+<div id="alerts"></div>
+<div id="log"></div>
+
+<script>
+let totalBtc = 0;
+let totalInvested = 0;
+let buyHistory = [];
+let priceHistory = [];
+let chart;
+let priceData = {
+  labels: [],
+  datasets: [
+    { 
+      label: 'BTC Price', 
+      data: [], 
+      borderColor: 'rgb(75, 192, 192)',
+      tension: 0.1,
+      borderWidth: 2,
+      fill: false 
+    },
+    { 
+      label: 'Buys', 
+      data: [], 
+      type: 'scatter', 
+      backgroundColor: 'red',
+      pointRadius: 5,
+      pointHoverRadius: 7
+    }
+  ]
+};
+
+async function getCurrentPrice() {
+  try {
+    const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
+    const data = await response.json();
+    return parseFloat(data.price);
+  } catch (e) {
+    try {
+      const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd');
+      const data = await response.json();
+      return data.bitcoin.usd;
+    } catch (e) {
+      console.error('Failed to fetch price from both APIs');
+      return null;
+    }
+  }
+}
+
+async function updatePrice() {
+  const price = await getCurrentPrice();
+  if (price) {
+    document.getElementById('price').textContent = price.toFixed(2);
+    const now = new Date();
+    priceHistory.push({ timestamp: now, price });
+    const oneDayAgo = new Date(now - 24 * 3600 * 1000);
+    priceHistory = priceHistory.filter(item => item.timestamp > oneDayAgo);
+
+    if (priceHistory.length > 1) {
+      const oldestPrice = priceHistory[0].price;
+      const change = (price - oldestPrice) / oldestPrice * 100;
+      const threshold = parseFloat(document.getElementById('alertThreshold').value);
+      if (change < -threshold) {
+        document.getElementById('alerts').innerHTML = `<p style="color: red; font-weight: bold;">ALERT: Price dropped by ${-change.toFixed(2)}% in 24h. Good time to buy extra!</p>`;
+      } else {
+        document.getElementById('alerts').innerHTML = '';
+      }
+    }
+
+    // Update chart data
+    const nowStr = now.toISOString();
+    if (!priceData.labels.includes(nowStr)) {
+      priceData.labels.push(nowStr);
+      priceData.datasets[0].data.push({x: nowStr, y: price});
+      
+      // Keep only the last 1000 data points to prevent performance issues
+      if (priceData.labels.length > 1000) {
+        priceData.labels.shift();
+        priceData.datasets[0].data.shift();
+      }
+      
+      chart.update();
+    }
+  }
+}
+
+const priceUpdateInterval = setInterval(updatePrice, 60000);
+
+async function fetchHistoricalData() {
+  try {
+    const response = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30');
+    const data = await response.json();
+    const prices = data.prices;
+    prices.forEach(([timestamp, price]) => {
+      const date = new Date(timestamp).toISOString();
+      priceData.labels.push(date);
+      priceData.datasets[0].data.push({x: date, y: price});
+    });
+  } catch (e) {
+    console.error('Failed to fetch historical data:', e);
+  }
+}
+
+function initChart() {
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: priceData,
+    options: {
+      responsive: true,
+      scales: {
+        x: { 
+          type: 'time',
+          time: {
+            unit: 'day',
+            tooltipFormat: 'MMM d, yyyy h:mm a'
+          },
+          title: {
+            display: true,
+            text: 'Date'
+          }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Price (USD)'
+          }
+        }
+      },
+      interaction: {
+        intersect: false,
+        mode: 'index'
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.dataset.label || '';
+              if (label) {
+                label += ': ';
+              }
+              if (context.parsed.y !== null) {
+                label += '$' + context.parsed.y.toFixed(2);
+              }
+              return label;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+let intervalId;
+function startSimulation() {
+  if (intervalId) clearInterval(intervalId);
+  const amount = parseFloat(document.getElementById('amount').value);
+  const intervalHours = parseFloat(document.getElementById('interval').value);
+  if (isNaN(amount) || isNaN(intervalHours) || amount <= 0 || amount > 100 || intervalHours <= 0) {
+    alert('Please enter a valid amount (max $100) and interval');
+    return;
+  }
+  
+  // Initial purchase
+  executePurchase(amount);
+  
+  // Set up interval for future purchases
+  intervalId = setInterval(() => executePurchase(amount), intervalHours * 3600 * 1000);
+  
+  document.getElementById('start').disabled = true;
+  document.getElementById('stop').disabled = false;
+}
+
+async function executePurchase(amount) {
+  const price = await getCurrentPrice();
+  if (price) {
+    const btcBought = amount / price;
+    totalBtc += btcBought;
+    totalInvested += amount;
+    const avgPrice = totalInvested / totalBtc;
+    
+    buyHistory.push({ timestamp: new Date(), price, btcBought });
+    document.getElementById('totalBtc').textContent = totalBtc.toFixed(8);
+    document.getElementById('totalInvested').textContent = totalInvested.toFixed(2);
+    document.getElementById('avgPrice').textContent = avgPrice.toFixed(2);
+    
+    const nowStr = new Date().toISOString();
+    priceData.datasets[1].data.push({x: nowStr, y: price});
+    
+    const logEntry = `<p>[${new Date().toLocaleString()}] Bought ${btcBought.toFixed(8)} BTC at $${price.toFixed(2)} (Cost: $${amount.toFixed(2)})</p>`;
+    document.getElementById('log').insertAdjacentHTML('afterbegin', logEntry);
+    
+    chart.update();
+  }
+}
+
+function stopSimulation() {
+  if (intervalId) {
+    clearInterval(intervalId);
+    intervalId = null;
+    document.getElementById('start').disabled = false;
+    document.getElementById('stop').disabled = true;
+  }
+}
+
+document.getElementById('start').addEventListener('click', startSimulation);
+document.getElementById('stop').addEventListener('click', stopSimulation);
+
+// Initialize the application
+window.addEventListener('DOMContentLoaded', () => {
+  fetchHistoricalData().then(() => {
+    initChart();
+    updatePrice(); // Get initial price
+  });
+});
+</script>
+</body>
+</html>
