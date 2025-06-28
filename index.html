@@ -6,45 +6,484 @@
 <script src="https://cdn.jsdelivr.net/npm/luxon@3.0.1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1.2.0"></script>
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-#chartContainer { width: 800px; height: 400px; }
-input, button { margin: 5px; }
-#status, #alerts, #log { margin-top: 10px; }
-#log { max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; }
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  color: #333;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  color: white;
+  margin-bottom: 10px;
+  font-size: 2.5em;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.subtitle {
+  text-align: center;
+  color: rgba(255,255,255,0.9);
+  margin-bottom: 30px;
+  font-size: 1.1em;
+}
+
+.card {
+  background: white;
+  border-radius: 15px;
+  padding: 25px;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+.controls-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  align-items: end;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #555;
+}
+
+.input-group input,
+.input-group select {
+  padding: 12px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.input-group input:focus,
+.input-group select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+  background: #f8f9fa;
+  color: #6c757d;
+  border: 2px solid #e9ecef;
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c82333;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+}
+
+.profit-positive {
+  color: #28a745;
+}
+
+.profit-negative {
+  color: #dc3545;
+}
+
+#chartContainer {
+  width: 100%;
+  height: 400px;
+  margin: 20px 0;
+}
+
+.alert {
+  padding: 15px;
+  border-radius: 8px;
+  margin: 10px 0;
+  font-weight: 600;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  border: 1px solid #c3e6cb;
+  color: #155724;
+}
+
+.alert-info {
+  background-color: #d1ecf1;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.transactions-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: #f8f9fa;
+}
+
+.transaction-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-bottom: 1px solid #dee2e6;
+  background: white;
+  margin: 5px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.transaction-item:last-child {
+  border-bottom: none;
+}
+
+.transaction-info {
+  flex: 1;
+}
+
+.transaction-time {
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.transaction-details {
+  font-size: 14px;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.transaction-pnl {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+  transform: scale(1.1);
+}
+
+.section-title {
+  font-size: 1.5em;
+  margin-bottom: 15px;
+  color: #333;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1000;
+}
+
+.toast {
+  background-color: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  opacity: 0;
+  transition: opacity 0.5s ease-in-out;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+.interval-group {
+  display: flex;
+  align-items: center;
+}
+
+.interval-group input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.alert-group {
+  display: flex;
+  align-items: center;
+}
+
+.alert-group input {
+  flex: 1;
+  margin-right: 10px;
+}
+
+.offline-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #dc3545;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 5px;
+  font-size: 14px;
+  font-weight: 600;
+  display: none;
+  z-index: 1001;
+}
+
+.offline-indicator.show {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .controls-card {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .transaction-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .section-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
 </style>
 </head>
 <body>
-<h1>Bitcoin DCA Accumulator</h1>
-<p>This tool simulates Dollar Cost Averaging (DCA) for Bitcoin. Set the fixed amount to invest (max $100) and the interval in hours. The simulation will "buy" Bitcoin at each interval using the current price. Alerts will be shown if the price drops significantly.</p>
-<p><strong>Note:</strong> This is a simulation, not real trading. It runs only when the page is open.</p>
-
-<div>
-<label>Fixed Investment Amount ($): </label><input type="number" id="amount" value="10" min="1" max="100">
-</div>
-<div>
-<label>Interval (hours): </label><input type="number" id="interval" value="24" min="1">
-</div>
-<div>
-<label>Alert if price drops by (% in 24h): </label><input type="number" id="alertThreshold" value="5" min="1">
-</div>
-<div>
-<button id="start">Start Simulation</button>
-<button id="stop" disabled>Stop Simulation</button>
+<div class="offline-indicator" id="offlineIndicator">
+  📡 Offline Mode - Data saved locally
 </div>
 
-<div id="status">
-<p>Current Bitcoin Price: <span id="price">-</span></p>
-<p>Total Bitcoin Accumulated: <span id="totalBtc">0</span></p>
-<p>Total Amount Invested: <span id="totalInvested">0</span></p>
-<p>Average Buy Price: <span id="avgPrice">0</span></p>
+<div class="container">
+  <h1>Bitcoin DCA Accumulator</h1>
+  <p class="subtitle">Smart Dollar Cost Averaging simulation with real-time Bitcoin prices</p>
+
+  <div class="card">
+    <div class="controls-card">
+      <div class="input-group">
+        <label>Fixed Investment Amount ($):</label>
+        <input type="number" id="amount" value="10" min="1" max="100">
+      </div>
+      <div class="input-group">
+        <label>Interval:</label>
+        <div class="interval-group">
+          <input type="number" id="intervalValue" value="24" min="1">
+          <select id="intervalUnit">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours" selected>Hours</option>
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Alert if price drops by:</label>
+        <div class="alert-group">
+          <input type="number" id="alertThreshold" value="5" min="1">
+          <span>% in</span>
+          <input type="number" id="alertTimeValue" value="24" min="1" style="width: 80px; margin: 0 5px;">
+          <select id="alertTimeUnit">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours" selected>Hours</option>
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Alert if price rises by:</label>
+        <div class="alert-group">
+          <input type="number" id="riseAlertThreshold" value="10" min="1">
+          <span>% in</span>
+          <input type="number" id="riseAlertTimeValue" value="24" min="1" style="width: 80px; margin: 0 5px;">
+          <select id="riseAlertTimeUnit">
+            <option value="seconds">Seconds</option>
+            <option value="minutes">Minutes</option>
+            <option value="hours" selected>Hours</option>
+            <option value="days">Days</option>
+            <option value="weeks">Weeks</option>
+            <option value="months">Months</option>
+          </select>
+        </div>
+      </div>
+      <div class="input-group">
+        <label>Transaction Fee (%):</label>
+        <input type="number" id="transactionFee" value="0.1" min="0" step="0.01">
+      </div>
+      <div class="button-group">
+        <button id="start" class="btn btn-primary">Start Simulation</button>
+        <button id="stop" class="btn btn-secondary" disabled>Stop Simulation</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-label">Current BTC Price</div>
+        <div class="stat-value">$<span id="price">-</span></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total BTC Accumulated</div>
+        <div class="stat-value"><span id="totalBtc">0</span> BTC</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total Invested</div>
+        <div class="stat-value">$<span id="totalInvested">0</span></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Average Buy Price</div>
+        <div class="stat-value">$<span id="avgPrice">0</span></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Current Value</div>
+        <div class="stat-value">$<span id="currentValue">0</span></div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Total P&L</div>
+        <div class="stat-value" id="totalPnL">$0</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-label">Next Buy In</div>
+        <div class="stat-value" id="countdown">--:--:--</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div id="chartContainer">
+      <canvas id="priceChart"></canvas>
+    </div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div class="card">
+    <div class="section-title">
+      Transaction History
+      <button id="resetAll" class="btn btn-danger">Reset All</button>
+    </div>
+    <div class="transactions-container" id="log"></div>
+  </div>
 </div>
 
-<div id="chartContainer">
-<canvas id="priceChart"></canvas>
-</div>
-
-<div id="alerts"></div>
-<div id="log"></div>
+<div class="toast-container" id="toastContainer"></div>
 
 <script>
 let totalBtc = 0;
@@ -52,21 +491,27 @@ let totalInvested = 0;
 let buyHistory = [];
 let priceHistory = [];
 let chart;
-let priceData = {
+let currentPrice = 0;
+let countdownIntervalId;
+let nextBuyTime;
+let isOnline = navigator.onLine;
+let lastPriceUpdate = null;
+
+const priceData = {
   labels: [],
   datasets: [
-    { 
-      label: 'BTC Price', 
-      data: [], 
+    {
+      label: 'BTC Price',
+      data: [],
       borderColor: 'rgb(75, 192, 192)',
       tension: 0.1,
       borderWidth: 2,
-      fill: false 
+      fill: false
     },
-    { 
-      label: 'Buys', 
-      data: [], 
-      type: 'scatter', 
+    {
+      label: 'Buys',
+      data: [],
+      type: 'scatter',
       backgroundColor: 'red',
       pointRadius: 5,
       pointHoverRadius: 7
@@ -74,7 +519,147 @@ let priceData = {
   ]
 };
 
+// Online/Offline Detection
+window.addEventListener('online', () => {
+  isOnline = true;
+  document.getElementById('offlineIndicator').classList.remove('show');
+  showToast('Back online! Syncing data...', 'success');
+  updatePrice(); // Fetch latest price when back online
+});
+
+window.addEventListener('offline', () => {
+  isOnline = false;
+  document.getElementById('offlineIndicator').classList.add('show');
+  showToast('Offline mode - data will be saved locally', 'info');
+});
+
+// Toast Message Function
+function showToast(message, type = 'info') {
+  const toastContainer = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toastContainer.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add('show');
+  }, 100);
+
+  setTimeout(() => {
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => toast.remove());
+  }, 3000);
+}
+
+// Enhanced Local Storage Functions with offline support
+function saveToLocalStorage() {
+  const data = {
+    totalBtc,
+    totalInvested,
+    buyHistory,
+    priceHistory: priceHistory.slice(-100),
+    lastSaved: new Date().toISOString(),
+    intervalValue: document.getElementById('intervalValue').value,
+    intervalUnit: document.getElementById('intervalUnit').value,
+    alertThreshold: document.getElementById('alertThreshold').value,
+    alertTimeValue: document.getElementById('alertTimeValue').value,
+    alertTimeUnit: document.getElementById('alertTimeUnit').value,
+    riseAlertThreshold: document.getElementById('riseAlertThreshold').value,
+    riseAlertTimeValue: document.getElementById('riseAlertTimeValue').value,
+    riseAlertTimeUnit: document.getElementById('riseAlertTimeUnit').value,
+    transactionFee: document.getElementById('transactionFee').value,
+    nextBuyTime: nextBuyTime ? nextBuyTime.toISOString() : null,
+    lastPriceUpdate: lastPriceUpdate,
+    currentPrice: currentPrice
+  };
+  
+  try {
+    localStorage.setItem('bitcoinDCAData', JSON.stringify(data));
+    // Also save to IndexedDB for better offline support
+    saveToIndexedDB(data);
+  } catch (e) {
+    console.error('Error saving to localStorage:', e);
+    showToast('Error saving data locally', 'error');
+  }
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('bitcoinDCAData');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      totalBtc = data.totalBtc || 0;
+      totalInvested = data.totalInvested || 0;
+      buyHistory = data.buyHistory || [];
+      priceHistory = data.priceHistory || [];
+      lastPriceUpdate = data.lastPriceUpdate;
+      currentPrice = data.currentPrice || 0;
+
+      document.getElementById('intervalValue').value = data.intervalValue || 24;
+      document.getElementById('intervalUnit').value = data.intervalUnit || 'hours';
+      document.getElementById('alertThreshold').value = data.alertThreshold || 5;
+      document.getElementById('alertTimeValue').value = data.alertTimeValue || 24;
+      document.getElementById('alertTimeUnit').value = data.alertTimeUnit || 'hours';
+      document.getElementById('riseAlertThreshold').value = data.riseAlertThreshold || 10;
+      document.getElementById('riseAlertTimeValue').value = data.riseAlertTimeValue || 24;
+      document.getElementById('riseAlertTimeUnit').value = data.riseAlertTimeUnit || 'hours';
+      document.getElementById('transactionFee').value = data.transactionFee || 0.1;
+      nextBuyTime = data.nextBuyTime ? new Date(data.nextBuyTime) : null;
+
+      updateDisplay();
+      updateTransactionLog();
+
+      // Restore buy points on chart
+      buyHistory.forEach(buy => {
+        const timestamp = new Date(buy.timestamp).toISOString();
+        priceData.datasets[1].data.push({x: timestamp, y: buy.price});
+      });
+
+      return true;
+    } catch (e) {
+      console.error('Error loading saved data:', e);
+      return false;
+    }
+  }
+  return false;
+}
+
+// IndexedDB support for better offline storage
+function saveToIndexedDB(data) {
+  const request = indexedDB.open('BitcoinDCA', 1);
+  request.onupgradeneeded = function(event) {
+    const db = event.target.result;
+    if (!db.objectStoreNames.contains('data')) {
+      db.createObjectStore('data');
+    }
+  };
+  request.onsuccess = function(event) {
+    const db = event.target.result;
+    const transaction = db.transaction(['data'], 'readwrite');
+    const store = transaction.objectStore('data');
+    store.put(data, 'bitcoinDCAData');
+  };
+}
+
+function clearLocalStorage() {
+  localStorage.removeItem('bitcoinDCAData');
+  // Also clear IndexedDB
+  const request = indexedDB.open('BitcoinDCA', 1);
+  request.onsuccess = function(event) {
+    const db = event.target.result;
+    const transaction = db.transaction(['data'], 'readwrite');
+    const store = transaction.objectStore('data');
+    store.delete('bitcoinDCAData');
+  };
+  showToast('All data cleared!', 'info');
+}
+
 async function getCurrentPrice() {
+  if (!isOnline) {
+    // Return last known price if offline
+    return currentPrice || null;
+  }
+
   try {
     const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT');
     const data = await response.json();
@@ -86,51 +671,214 @@ async function getCurrentPrice() {
       return data.bitcoin.usd;
     } catch (e) {
       console.error('Failed to fetch price from both APIs');
-      return null;
+      // Return last known price if all APIs fail
+      return currentPrice || null;
     }
+  }
+}
+
+function calculatePnL(buyPrice, currentPrice, amount) {
+  const btcAmount = amount / buyPrice;
+  const currentValue = btcAmount * currentPrice;
+  return currentValue - amount;
+}
+
+function updateDisplay() {
+  document.getElementById('totalBtc').textContent = totalBtc.toFixed(8);
+  document.getElementById('totalInvested').textContent = totalInvested.toFixed(2);
+
+  if (totalBtc > 0) {
+    const avgPrice = totalInvested / totalBtc;
+    document.getElementById('avgPrice').textContent = avgPrice.toFixed(2);
+
+    const currentValue = totalBtc * currentPrice;
+    document.getElementById('currentValue').textContent = currentValue.toFixed(2);
+
+    const totalPnL = currentValue - totalInvested;
+    const pnlElement = document.getElementById('totalPnL');
+    pnlElement.textContent = `$${totalPnL.toFixed(2)}`;
+    pnlElement.className = `stat-value ${totalPnL >= 0 ? 'profit-positive' : 'profit-negative'}`;
+  } else {
+    document.getElementById('avgPrice').textContent = '0';
+    document.getElementById('currentValue').textContent = '0';
+    document.getElementById('totalPnL').textContent = '$0';
+    document.getElementById('totalPnL').className = 'stat-value';
+  }
+}
+
+function getTimeFrameMilliseconds(value, unit) {
+  switch (unit) {
+    case 'seconds': return value * 1000;
+    case 'minutes': return value * 60 * 1000;
+    case 'hours': return value * 3600 * 1000;
+    case 'days': return value * 24 * 3600 * 1000;
+    case 'weeks': return value * 7 * 24 * 3600 * 1000;
+    case 'months': return value * 30 * 24 * 3600 * 1000; // Approximation
+    default: return value * 3600 * 1000; // Default to hours
   }
 }
 
 async function updatePrice() {
   const price = await getCurrentPrice();
   if (price) {
+    currentPrice = price;
+    lastPriceUpdate = new Date().toISOString();
     document.getElementById('price').textContent = price.toFixed(2);
+    updateDisplay();
+
     const now = new Date();
     priceHistory.push({ timestamp: now, price });
-    const oneDayAgo = new Date(now - 24 * 3600 * 1000);
-    priceHistory = priceHistory.filter(item => item.timestamp > oneDayAgo);
 
-    if (priceHistory.length > 1) {
-      const oldestPrice = priceHistory[0].price;
-      const change = (price - oldestPrice) / oldestPrice * 100;
-      const threshold = parseFloat(document.getElementById('alertThreshold').value);
-      if (change < -threshold) {
-        document.getElementById('alerts').innerHTML = `<p style="color: red; font-weight: bold;">ALERT: Price dropped by ${-change.toFixed(2)}% in 24h. Good time to buy extra!</p>`;
-      } else {
-        document.getElementById('alerts').innerHTML = '';
+    // Check alerts with flexible time frames
+    const dropTimeMs = getTimeFrameMilliseconds(
+      parseFloat(document.getElementById('alertTimeValue').value),
+      document.getElementById('alertTimeUnit').value
+    );
+    const riseTimeMs = getTimeFrameMilliseconds(
+      parseFloat(document.getElementById('riseAlertTimeValue').value),
+      document.getElementById('riseAlertTimeUnit').value
+    );
+
+    // Filter price history for drop alerts
+    const dropTimeAgo = new Date(now - dropTimeMs);
+    const dropPriceHistory = priceHistory.filter(item => item.timestamp > dropTimeAgo);
+
+    // Filter price history for rise alerts
+    const riseTimeAgo = new Date(now - riseTimeMs);
+    const risePriceHistory = priceHistory.filter(item => item.timestamp > riseTimeAgo);
+
+    let alertHtml = '';
+    
+    if (dropPriceHistory.length > 1) {
+      const oldestDropPrice = dropPriceHistory[0].price;
+      const dropChange = (price - oldestDropPrice) / oldestDropPrice * 100;
+      const dropThreshold = parseFloat(document.getElementById('alertThreshold').value);
+      
+      if (dropChange < -dropThreshold) {
+        const timeUnit = document.getElementById('alertTimeUnit').value;
+        const timeValue = document.getElementById('alertTimeValue').value;
+        alertHtml += `<div class="alert alert-danger">🚨 ALERT: Price dropped by ${Math.abs(dropChange).toFixed(2)}% in ${timeValue} ${timeUnit}. Good time to buy extra!</div>`;
+        showToast(`Price dropped by ${Math.abs(dropChange).toFixed(2)}% in ${timeValue} ${timeUnit}!`, 'danger');
       }
     }
+
+    if (risePriceHistory.length > 1) {
+      const oldestRisePrice = risePriceHistory[0].price;
+      const riseChange = (price - oldestRisePrice) / oldestRisePrice * 100;
+      const riseThreshold = parseFloat(document.getElementById('riseAlertThreshold').value);
+      
+      if (riseChange > riseThreshold) {
+        const timeUnit = document.getElementById('riseAlertTimeUnit').value;
+        const timeValue = document.getElementById('riseAlertTimeValue').value;
+        alertHtml += `<div class="alert alert-success">📈 ALERT: Price rose by ${riseChange.toFixed(2)}% in ${timeValue} ${timeUnit}. Consider taking profits!</div>`;
+        showToast(`Price rose by ${riseChange.toFixed(2)}% in ${timeValue} ${timeUnit}!`, 'success');
+      }
+    }
+
+    document.getElementById('alerts').innerHTML = alertHtml;
 
     // Update chart data
     const nowStr = now.toISOString();
     if (!priceData.labels.includes(nowStr)) {
       priceData.labels.push(nowStr);
       priceData.datasets[0].data.push({x: nowStr, y: price});
-      
+
       // Keep only the last 1000 data points to prevent performance issues
       if (priceData.labels.length > 1000) {
         priceData.labels.shift();
         priceData.datasets[0].data.shift();
       }
-      
-      chart.update();
+
+      if (chart) chart.update();
     }
+
+    saveToLocalStorage();
   }
 }
 
-const priceUpdateInterval = setInterval(updatePrice, 60000);
+function updateTransactionLog() {
+  const logContainer = document.getElementById('log');
+  logContainer.innerHTML = '';
+
+  if (buyHistory.length === 0) {
+    logContainer.innerHTML = '<div style="text-align: center; padding: 20px; color: #6c757d;">No transactions yet</div>';
+    return;
+  }
+
+  buyHistory.slice().reverse().forEach((buy, index) => {
+    const actualIndex = buyHistory.length - 1 - index;
+    const pnl = calculatePnL(buy.price, currentPrice, buy.investedAmount);
+    const pnlClass = pnl >= 0 ? 'profit-positive' : 'profit-negative';
+
+    const logEntry = `
+      <div class="transaction-item">
+        <div class="transaction-info">
+          <div class="transaction-time">${new Date(buy.timestamp).toLocaleString()}</div>
+          <div class="transaction-details">
+            Bought ${buy.btcBought.toFixed(8)} BTC at $${buy.price.toFixed(2)} 
+            (Cost: $${buy.investedAmount.toFixed(2)} including $${buy.feeAmount.toFixed(2)} fee)
+          </div>
+          <div class="transaction-pnl ${pnlClass}">
+            P&L: ${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)} 
+            (${((pnl / buy.investedAmount) * 100).toFixed(2)}%)
+          </div>
+        </div>
+        <button class="delete-btn" onclick="deleteTransaction(${actualIndex})" title="Delete transaction">
+          🗑️
+        </button>
+      </div>
+    `;
+    logContainer.insertAdjacentHTML('beforeend', logEntry);
+  });
+}
+
+function deleteTransaction(index) {
+  if (confirm('Are you sure you want to delete this transaction?')) {
+    const transaction = buyHistory[index];
+    totalBtc -= transaction.btcBought;
+    totalInvested -= transaction.investedAmount;
+    buyHistory.splice(index, 1);
+
+    // Remove from chart
+    const timestamp = new Date(transaction.timestamp).toISOString();
+    const buyDataIndex = priceData.datasets[1].data.findIndex(point => point.x === timestamp);
+    if (buyDataIndex !== -1) {
+      priceData.datasets[1].data.splice(buyDataIndex, 1);
+    }
+
+    updateDisplay();
+    updateTransactionLog();
+    if (chart) chart.update();
+    saveToLocalStorage();
+    showToast('Transaction deleted!', 'info');
+  }
+}
+
+function resetAllTransactions() {
+  if (confirm('Are you sure you want to reset ALL transactions? This cannot be undone.')) {
+    totalBtc = 0;
+    totalInvested = 0;
+    buyHistory = [];
+    priceData.datasets[1].data = [];
+    
+    updateDisplay();
+    updateTransactionLog();
+    if (chart) chart.update();
+    saveToLocalStorage();
+    showToast('All transactions reset!', 'info');
+  }
+}
+
+// Update price every minute if online
+const priceUpdateInterval = setInterval(() => {
+  if (isOnline) {
+    updatePrice();
+  }
+}, 60000);
 
 async function fetchHistoricalData() {
+  if (!isOnline) return;
+  
   try {
     const response = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=30');
     const data = await response.json();
@@ -152,8 +900,9 @@ function initChart() {
     data: priceData,
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       scales: {
-        x: { 
+        x: {
           type: 'time',
           time: {
             unit: 'day',
@@ -195,68 +944,172 @@ function initChart() {
   });
 }
 
-let intervalId;
-function startSimulation() {
-  if (intervalId) clearInterval(intervalId);
-  const amount = parseFloat(document.getElementById('amount').value);
-  const intervalHours = parseFloat(document.getElementById('interval').value);
-  if (isNaN(amount) || isNaN(intervalHours) || amount <= 0 || amount > 100 || intervalHours <= 0) {
-    alert('Please enter a valid amount (max $100) and interval');
+function getIntervalMilliseconds() {
+  const value = parseFloat(document.getElementById('intervalValue').value);
+  const unit = document.getElementById('intervalUnit').value;
+  return getTimeFrameMilliseconds(value, unit);
+}
+
+function updateCountdown() {
+  if (!nextBuyTime) {
+    document.getElementById('countdown').textContent = '--:--:--';
     return;
   }
   
-  // Initial purchase
-  executePurchase(amount);
-  
-  // Set up interval for future purchases
-  intervalId = setInterval(() => executePurchase(amount), intervalHours * 3600 * 1000);
-  
-  document.getElementById('start').disabled = true;
-  document.getElementById('stop').disabled = false;
+  const now = new Date().getTime();
+  const distance = nextBuyTime.getTime() - now;
+
+  if (distance <= 0) {
+    // Time to execute purchase!
+    executePurchase();
+    return;
+  }
+
+  const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+  document.getElementById('countdown').textContent = 
+    `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
-async function executePurchase(amount) {
+function startSimulation() {
+  if (countdownIntervalId) clearInterval(countdownIntervalId);
+
+  const amount = parseFloat(document.getElementById('amount').value);
+  const intervalMs = getIntervalMilliseconds();
+  const transactionFeeRate = parseFloat(document.getElementById('transactionFee').value) / 100;
+
+  if (isNaN(amount) || amount <= 0 || amount > 100) {
+    alert('Please enter a valid investment amount (max $100).');
+    return;
+  }
+  if (isNaN(intervalMs) || intervalMs <= 0) {
+    alert('Please enter a valid interval.');
+    return;
+  }
+  if (isNaN(transactionFeeRate) || transactionFeeRate < 0) {
+    alert('Please enter a valid transaction fee percentage.');
+    return;
+  }
+
+  showToast('Simulation started!', 'success');
+  document.getElementById('start').disabled = true;
+  document.getElementById('stop').disabled = false;
+
+  // Initial purchase
+  executePurchase();
+
+  // Start countdown timer
+  countdownIntervalId = setInterval(updateCountdown, 1000);
+}
+
+async function executePurchase() {
+  const amount = parseFloat(document.getElementById('amount').value);
+  const transactionFeeRate = parseFloat(document.getElementById('transactionFee').value) / 100;
+  
   const price = await getCurrentPrice();
   if (price) {
-    const btcBought = amount / price;
+    const feeAmount = amount * transactionFeeRate;
+    const netAmount = amount - feeAmount;
+    const btcBought = netAmount / price;
+
     totalBtc += btcBought;
-    totalInvested += amount;
-    const avgPrice = totalInvested / totalBtc;
-    
-    buyHistory.push({ timestamp: new Date(), price, btcBought });
-    document.getElementById('totalBtc').textContent = totalBtc.toFixed(8);
-    document.getElementById('totalInvested').textContent = totalInvested.toFixed(2);
-    document.getElementById('avgPrice').textContent = avgPrice.toFixed(2);
-    
+    totalInvested += amount; // Total invested includes the fee
+
+    const transaction = {
+      timestamp: new Date(),
+      price,
+      btcBought,
+      investedAmount: amount,
+      feeAmount
+    };
+    buyHistory.push(transaction);
+
+    updateDisplay();
+    updateTransactionLog();
+
     const nowStr = new Date().toISOString();
     priceData.datasets[1].data.push({x: nowStr, y: price});
-    
-    const logEntry = `<p>[${new Date().toLocaleString()}] Bought ${btcBought.toFixed(8)} BTC at $${price.toFixed(2)} (Cost: $${amount.toFixed(2)})</p>`;
-    document.getElementById('log').insertAdjacentHTML('afterbegin', logEntry);
-    
-    chart.update();
+
+    if (chart) chart.update();
+    saveToLocalStorage();
+    showToast(`Bought ${btcBought.toFixed(8)} BTC for $${amount.toFixed(2)}`, 'success');
+
+    // Set next buy time for countdown and restart timer
+    const intervalMs = getIntervalMilliseconds();
+    nextBuyTime = new Date(new Date().getTime() + intervalMs);
+    saveToLocalStorage(); // Save the new nextBuyTime
+  } else {
+    showToast('Failed to get current price. Retrying in 30 seconds...', 'error');
+    // Retry in 30 seconds
+    setTimeout(() => {
+      if (nextBuyTime && nextBuyTime.getTime() <= new Date().getTime()) {
+        executePurchase();
+      }
+    }, 30000);
   }
 }
 
 function stopSimulation() {
-  if (intervalId) {
-    clearInterval(intervalId);
-    intervalId = null;
-    document.getElementById('start').disabled = false;
-    document.getElementById('stop').disabled = true;
+  if (countdownIntervalId) {
+    clearInterval(countdownIntervalId);
+    countdownIntervalId = null;
   }
+  nextBuyTime = null;
+  updateCountdown();
+  document.getElementById('start').disabled = false;
+  document.getElementById('stop').disabled = true;
+  saveToLocalStorage();
+  showToast('Simulation stopped!', 'info');
 }
 
+// Event Listeners
 document.getElementById('start').addEventListener('click', startSimulation);
 document.getElementById('stop').addEventListener('click', stopSimulation);
+document.getElementById('resetAll').addEventListener('click', resetAllTransactions);
 
 // Initialize the application
 window.addEventListener('DOMContentLoaded', () => {
+  // Check initial online status
+  if (!isOnline) {
+    document.getElementById('offlineIndicator').classList.add('show');
+  }
+
+  // Load saved data first
+  loadFromLocalStorage();
+
   fetchHistoricalData().then(() => {
     initChart();
     updatePrice(); // Get initial price
   });
+
+  // Resume countdown if nextBuyTime is set from loaded data
+  if (nextBuyTime && nextBuyTime.getTime() > new Date().getTime()) {
+    countdownIntervalId = setInterval(updateCountdown, 1000);
+    document.getElementById('start').disabled = true;
+    document.getElementById('stop').disabled = false;
+  } else if (nextBuyTime && nextBuyTime.getTime() <= new Date().getTime()) {
+    // If nextBuyTime is in the past, execute purchase and continue simulation
+    executePurchase();
+    countdownIntervalId = setInterval(updateCountdown, 1000);
+    document.getElementById('start').disabled = true;
+    document.getElementById('stop').disabled = false;
+  } else {
+    // No active simulation
+    nextBuyTime = null;
+    updateCountdown();
+  }
 });
+
+// Save data before page unload
+window.addEventListener('beforeunload', () => {
+  saveToLocalStorage();
+});
+
+// Auto-save every 30 seconds
+setInterval(saveToLocalStorage, 30000);
 </script>
 </body>
 </html>
+
